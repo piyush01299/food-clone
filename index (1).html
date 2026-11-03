@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Swaadly – Food Delivery Clone</title>
+<style>
+:root{--red:#e23744;--ink:#1c1c1c;--muted:#6b6b6b;--bg:#fff8f5;--line:#ecdcd5}
+*{box-sizing:border-box}
+body{margin:0;font-family:Georgia,'Times New Roman',serif;background:var(--bg);color:var(--ink)}
+button,input{font:inherit}
+.top{position:sticky;top:0;z-index:5;display:flex;gap:12px;align-items:center;padding:12px 20px;background:#fff;border-bottom:1px solid var(--line)}
+.brand{font-size:1.5rem;font-weight:bold;color:var(--red);font-style:italic}
+#search{flex:1;padding:10px 14px;border:1px solid var(--line);border-radius:8px;min-width:0}
+.cart-btn,#checkout{background:var(--red);color:#fff;border:0;padding:10px 16px;border-radius:8px;cursor:pointer}
+.hero{padding:40px 20px 24px;max-width:1000px;margin:auto}
+.hero h1{font-size:clamp(1.8rem,5vw,3rem);margin:0 0 6px}
+.hero p{color:var(--muted);margin:0}
+.filters{display:flex;gap:8px;overflow-x:auto;padding:8px 20px;max-width:1000px;margin:auto}
+.chip{border:1px solid var(--line);background:#fff;padding:7px 14px;border-radius:20px;cursor:pointer;white-space:nowrap}
+.chip.on{background:var(--red);color:#fff;border-color:var(--red)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;padding:16px 20px 60px;max-width:1000px;margin:auto}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer}
+.card .pic{height:130px;display:grid;place-items:center;font-size:3.5rem}
+.card .body{padding:12px 14px}
+.card h3{margin:0 0 4px}
+.meta{color:var(--muted);font-size:.9rem;display:flex;justify-content:space-between}
+.rating{background:#267e3e;color:#fff;border-radius:6px;padding:1px 7px;font-size:.85rem}
+.menu{grid-column:1/-1;background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px}
+.menu h2{margin-top:0}
+.dish{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.dish button{border:1px solid var(--red);color:var(--red);background:#fff;border-radius:6px;padding:6px 14px;cursor:pointer}
+.cart{position:fixed;right:0;top:0;bottom:0;width:min(360px,100%);background:#fff;border-left:1px solid var(--line);padding:16px;z-index:10;display:flex;flex-direction:column}
+.cart-head{display:flex;justify-content:space-between;align-items:center}
+#cartItems{flex:1;overflow:auto}
+.line{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.line button{width:26px;height:26px;border-radius:50%;border:1px solid var(--line);background:#fff;cursor:pointer}
+.cart-foot{display:flex;justify-content:space-between;align-items:center;padding-top:12px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:8px;z-index:20}
+.hidden{display:none}
+:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">swaadly</div>
+  <input id="search" type="search" placeholder="Restaurant ya dish search karein…">
+  <button id="cartBtn" class="cart-btn">Cart (<span id="cartCount">0</span>)</button>
+</header>
+
+<section class="hero">
+  <h1>Bhookh lagi hai? Order karo.</h1>
+  <p>Apne shehar ke best restaurants, ghar tak.</p>
+</section>
+
+<nav class="filters" id="filters"></nav>
+<main id="list" class="grid"></main>
+
+<aside id="cart" class="cart hidden">
+  <div class="cart-head"><h2>Aapka cart</h2><button id="closeCart">Band karein</button></div>
+  <div id="cartItems"></div>
+  <div class="cart-foot">
+    <strong>Total: ₹<span id="total">0</span></strong>
+    <button id="checkout">Order place karein</button>
+  </div>
+</aside>
+
+<div id="toast" class="toast hidden"></div>
+<script>
+const restaurants = [
+  {id:1,name:"Punjabi Tadka",cuisine:"North Indian",rating:4.4,time:30,emoji:"🍛",bg:"#ffe3d6",menu:[["Butter Chicken",320],["Dal Makhani",220],["Garlic Naan",50],["Paneer Tikka",260]]},
+  {id:2,name:"Pizza Junction",cuisine:"Pizza",rating:4.1,time:25,emoji:"🍕",bg:"#fff0c9",menu:[["Margherita",199],["Farmhouse",329],["Garlic Bread",120]]},
+  {id:3,name:"Biryani House",cuisine:"Biryani",rating:4.6,time:35,emoji:"🍚",bg:"#e6f3d4",menu:[["Chicken Biryani",280],["Veg Biryani",220],["Raita",40]]},
+  {id:4,name:"Burger Barn",cuisine:"Burger",rating:3.9,time:20,emoji:"🍔",bg:"#ffe0e0",menu:[["Aloo Tikki Burger",99],["Chicken Burger",149],["French Fries",89]]},
+  {id:5,name:"South Spice",cuisine:"South Indian",rating:4.5,time:28,emoji:"🥞",bg:"#e0eefb",menu:[["Masala Dosa",110],["Idli Sambar",80],["Filter Coffee",50]]},
+  {id:6,name:"Meetha Ghar",cuisine:"Desserts",rating:4.3,time:22,emoji:"🍰",bg:"#f5e1f7",menu:[["Gulab Jamun",90],["Brownie",130],["Rasmalai",110]]}
+];
+const cuisines = ["All", ...new Set(restaurants.map(r => r.cuisine))];
+let filter = "All", query = "", openId = null, cart = {};
+
+const $ = id => document.getElementById(id);
+const toast = msg => { const t=$("toast"); t.textContent=msg; t.classList.remove("hidden"); setTimeout(()=>t.classList.add("hidden"),1800); };
+
+function renderFilters(){
+  $("filters").innerHTML = cuisines.map(c=>`<button class="chip ${c===filter?"on":""}" data-c="${c}">${c}</button>`).join("");
+  $("filters").querySelectorAll(".chip").forEach(b=>b.onclick=()=>{filter=b.dataset.c;openId=null;renderFilters();renderList();});
+}
+function renderList(){
+  const q = query.toLowerCase();
+  const rows = restaurants.filter(r =>
+    (filter==="All"||r.cuisine===filter) &&
+    (!q || r.name.toLowerCase().includes(q) || r.menu.some(m=>m[0].toLowerCase().includes(q))));
+  if(!rows.length){ $("list").innerHTML="<p>Kuch nahi mila. Koi aur naam try karein.</p>"; return; }
+  $("list").innerHTML = rows.map(r=>`
+    <div class="card" data-id="${r.id}">
+      <div class="pic" style="background:${r.bg}">${r.emoji}</div>
+      <div class="body"><h3>${r.name}</h3>
+      <div class="meta"><span>${r.cuisine} • ${r.time} min</span><span class="rating">${r.rating} ★</span></div></div>
+    </div>
+    ${r.id===openId?menuHTML(r):""}`).join("");
+  document.querySelectorAll(".card").forEach(c=>c.onclick=()=>{const id=+c.dataset.id;openId=openId===id?null:id;renderList();});
+  document.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>addItem(b.dataset.add,+b.dataset.price));
+}
+function menuHTML(r){
+  return `<div class="menu"><h2>${r.name} ka menu</h2>${r.menu.map(([n,p])=>
+    `<div class="dish"><span>${n} – ₹${p}</span><button data-add="${n}" data-price="${p}">Add karein</button></div>`).join("")}</div>`;
+}
+function addItem(name,price){
+  cart[name] = cart[name] ? {price,qty:cart[name].qty+1} : {price,qty:1};
+  renderCart(); toast(name+" cart mein add hua");
+}
+function changeQty(name,d){
+  cart[name].qty += d; if(cart[name].qty<=0) delete cart[name]; renderCart();
+}
+function renderCart(){
+  const names = Object.keys(cart);
+  $("cartItems").innerHTML = names.length ? names.map(n=>`
+    <div class="line"><span>${n}<br>₹${cart[n].price}</span>
+    <span><button data-d="-1" data-n="${n}" aria-label="Kam karein">−</button> ${cart[n].qty} <button data-d="1" data-n="${n}" aria-label="Badhayein">+</button></span></div>`).join("")
+    : "<p>Cart khali hai. Menu se dish add karein.</p>";
+  $("cartItems").querySelectorAll("button").forEach(b=>b.onclick=()=>changeQty(b.dataset.n,+b.dataset.d));
+  $("cartCount").textContent = names.reduce((s,n)=>s+cart[n].qty,0);
+  $("total").textContent = names.reduce((s,n)=>s+cart[n].qty*cart[n].price,0);
+}
+$("search").oninput = e => { query=e.target.value; renderList(); };
+$("cartBtn").onclick = () => $("cart").classList.remove("hidden");
+$("closeCart").onclick = () => $("cart").classList.add("hidden");
+$("checkout").onclick = () => {
+  if(!Object.keys(cart).length) return toast("Pehle kuch add karein");
+  cart = {}; renderCart(); $("cart").classList.add("hidden"); toast("Order place ho gaya! 🎉");
+};
+renderFilters(); renderList(); renderCart();
+
+</script>
+</body>
+</html>
