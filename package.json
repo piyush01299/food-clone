@@ -1,0 +1,1 @@
+{"name":"swaadly","version":"1.0.0","description":"Zomato-style food delivery demo (zero dependencies)","scripts":{"start":"node server.js"}}
